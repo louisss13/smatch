@@ -14,20 +14,22 @@ namespace tests
         public void InitTestUser()
         {
             DbContextOptionsBuilder builder = new DbContextOptionsBuilder();
-            DbContextOptions options = builder.UseSqlServer(@"Data Source:ADRESSE_SERVEUR;Initial Catalog = VOTRE_DB; User Id = ; Password = ").Options;
+            DbContextOptions options = builder.UseSqlServer(@"Data Source=smartchserver.database.windows.net;Initial Catalog = smartchDb; User Id = louisdeMahieu; Password = DeSmarch$MahiLoui_*").Options;
 
             _context = new UserContext(options);
 
             _context.Database.EnsureDeleted();
             _context.Database.EnsureCreated();
-            _context.Users.Add(new User() { });
+            _context.Users.Add(new User() {
+                FirstName = "Louis"
+            });
             _context.SaveChanges();
 
         }
         [TestMethod]
         public async Task TestUser() {
             User user = await _context.Users.FirstAsync();
-            Assert.AreEqual("", user.PostCode);
+            Assert.AreEqual("Louis", user.FirstName);
 
         }
     }
