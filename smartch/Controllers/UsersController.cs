@@ -42,6 +42,7 @@ namespace smartch.Controllers
         [HttpPost]
         public void Post([FromBody]User user)
         {
+            if(user == null) { return;}
             _context.Users.Add(user);
             _context.SaveChanges();
         }

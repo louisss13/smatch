@@ -5,6 +5,7 @@ namespace model
 {
     public class User
     {
+        //https://github.com/samiroquai/Henallux20172018/tree/master/BD%20Avancees%20et%20applications%20web/AspnetIdentityEFCore
         public int Id { get; set; }
         public String Password { get; set; }
         public String Name { get; set; }
@@ -17,8 +18,7 @@ namespace model
         public DateTime dateDerniereConnection { get; set; }
         public int Active { get; set; }
 
-        public ICollection<ClubAdmin> ClubAdmins { get; set; }
-        public ICollection<ClubMember> ClubMembers { get; set; }
+
 
     }
 }
