@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,8 +12,12 @@ namespace model
         public Address Adresse{ get; set; }
         public String ContactMail { get; set; }
         public String Phone { get; set; }
-        public ICollection<ClubAdmin> Admins { get; set; }
-        public ICollection<ClubMember> Members { get; set; }
-        public ICollection<Tournament> Tournaments { get; set; }
+        public List<ClubAdmins> Admins { get; set; } = new List<ClubAdmins>();
+        public List<ClubMember> Members { get; set; }
+        public List<Tournament> Tournaments { get; set; }
+
+        public Club() {
+           
+        }
     }
 }

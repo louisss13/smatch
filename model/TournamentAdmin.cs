@@ -3,8 +3,8 @@
     public class TournamentAdmin
     {
         public int TournamentId { get; set; }
-        public int UserId { get; set; }
+        public int AccountId { get; set; }
         public Tournament Tournament { get; set; }
-        public User User { get; set; }
+        public Account User { get; set; }
     }
 }

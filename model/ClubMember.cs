@@ -2,9 +2,9 @@
 {
     public class ClubMember
     {
-        public int UserId { get; set; }
+        public int UserInfoId { get; set; }
         public int ClubId { get; set; }
-        public User User { get; set; }
+        public UserInfo UserInfo { get; set; }
         public Club Club { get; set; }
     }
 }

@@ -5,45 +5,44 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using model;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace smartch.Controllers
 {
-    
 
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
-    public class UsersController : Controller
+    public class UserInfoController : BaseController
     {
-        UserContext _context;
-        public UsersController()
+        public UserInfoController(UserManager<Account> uMgr, SmartchDbContext dbContext) : base(uMgr, dbContext)
         {
-            DbContextOptionsBuilder builder = new DbContextOptionsBuilder();
-            DbContextOptions options = builder.UseSqlServer(@"Data Source=smartchserver.database.windows.net;Initial Catalog = smartchDb; User Id = louisdeMahieu; Password = DeSmarch$MahiLoui_*").Options;
-
-            _context = new UserContext(options);
         }
 
         // GET api/values
         [HttpGet]
-        public IEnumerable<User> Get()
+        public IEnumerable<UserInfo> Get()
         {
-            IEnumerable<User> users = _context.Users;
+            IEnumerable<UserInfo> users = _context.UserInfo;
             return users;
         }
 
         // GET api/values/5
         [HttpGet("{id}")]
-        public User Get(int id)
+        public UserInfo Get(int id)
         {
-            User user = _context.Users.Find(id);
+            UserInfo user = _context.UserInfo.Find(id);
             return user;
         }
 
         
         [HttpPost]
-        public void Post([FromBody]User user)
+        public void Post([FromBody]UserInfo user)
         {
             if(user == null) { return;}
-            _context.Users.Add(user);
+            _context.UserInfo.Add(user);
             _context.SaveChanges();
         }
 
