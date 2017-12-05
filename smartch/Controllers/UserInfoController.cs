@@ -23,10 +23,14 @@ namespace smartch.Controllers
 
         // GET api/values
         [HttpGet]
-        public IEnumerable<UserInfo> Get()
+        public async Task<IEnumerable<UserInfo>> Get()
         {
-            IEnumerable<UserInfo> users = _context.UserInfo;
-            return users;
+            Account currentUser = await GetCurrentUserAsync();
+            IEnumerable<UserInfo> users = _context.UserInfo.Include(u => u.Adresse).Where(u=> u.CreatedBy == currentUser) ;
+            IEnumerable<UserInfo> users2 = _context.Clubs.Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0).SelectMany(c => c.Members).Select(m => m.UserInfo);
+            //IEnumerable<UserInfo> users2 = _context.Clubs.Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0).Select(c => c.Members.Select(m=>m.UserInfo).Where(x => !users.Contains(x))).First();
+            IEnumerable<UserInfo> returnUsers =  users.Union(users2);
+            return returnUsers;
         }
 
         // GET api/values/5
@@ -39,11 +43,15 @@ namespace smartch.Controllers
 
         
         [HttpPost]
-        public void Post([FromBody]UserInfo user)
+        public async Task<IActionResult> Post([FromBody]UserInfo user)
         {
-            if(user == null) { return;}
+            if (user == null) { return BadRequest(); }
+            Account currentUser = await GetCurrentUserAsync();
+            user.CreatedBy = currentUser;
             _context.UserInfo.Add(user);
             _context.SaveChanges();
+            
+            return Created("AddUser", user);
         }
 
         // PUT api/values/5

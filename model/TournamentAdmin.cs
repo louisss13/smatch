@@ -2,9 +2,8 @@
 {
     public class TournamentAdmin
     {
-        public int TournamentId { get; set; }
-        public int AccountId { get; set; }
-        public Tournament Tournament { get; set; }
+        public long TournamentId { get; set; }
+        public string AccountId { get; set; }
         public Account User { get; set; }
     }
 }

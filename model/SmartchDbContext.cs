@@ -15,7 +15,7 @@ namespace model
         public DbSet<Address> Addresses { get; set; }
         public SmartchDbContext(DbContextOptions options) : base(options) {
             //this.Database.EnsureDeleted();
-            this.Database.EnsureCreated();
+            //this.Database.EnsureCreated();
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

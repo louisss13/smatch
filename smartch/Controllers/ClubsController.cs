@@ -22,9 +22,12 @@ namespace smartch.Controllers
 
         // GET: api/values
         [HttpGet]
-        public IEnumerable<Club> Get()
+        public async Task<IEnumerable<Club>> Get()
         {
-            return new Club[] { new Club() { Name="TEnnis1"}, new Club() { Name = "Foootttt1" } };
+            Account currentUser = await GetCurrentUserAsync();
+
+            return _context.Clubs.Where(c => c.Admins.Where(a=>a.Account == currentUser).Count() > 0); 
+           // return new Club[] { new Club() { Name="TEnnis1"}, new Club() { Name = "Foootttt1" } };
         }
 
         // GET api/values/5

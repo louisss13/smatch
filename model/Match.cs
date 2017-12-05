@@ -4,7 +4,7 @@ namespace model
 {
     public class Match
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public DateTime DebutPrevu { get; set; }
         public DateTime DebutReel { get; set; }
         public UserInfo Joueur1 { get; set; }

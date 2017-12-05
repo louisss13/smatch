@@ -8,7 +8,7 @@ namespace model
     {
      
         public string AccountId { get; set; }
-        public int ClubId { get; set; }
+        public long ClubId { get; set; }
         public Account Account { get; set; }
         //public Club Club { get; set; }
     }

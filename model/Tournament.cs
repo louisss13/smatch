@@ -5,7 +5,7 @@ namespace model
 {
     public class Tournament
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Name { get; set; }
         public Club Club { get; set; }
         public Address Address { get; set; }
