@@ -13,6 +13,9 @@ namespace model
         public DbSet<Club> Clubs { get; set; }
         public DbSet<UserInfo> UserInfo { get; set; }
         public DbSet<Address> Addresses { get; set; }
+        public DbSet<Tournament> Tournaments { get; set; }
+
+
         public SmartchDbContext(DbContextOptions options) : base(options) {
             //this.Database.EnsureDeleted();
             //this.Database.EnsureCreated();

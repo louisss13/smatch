@@ -28,7 +28,7 @@ namespace smartch.Controllers
             Account currentUser = await GetCurrentUserAsync();
             IEnumerable<UserInfo> users = _context.UserInfo.Include(u => u.Adresse).Where(u=> u.CreatedBy == currentUser) ;
             IEnumerable<UserInfo> users2 = _context.Clubs.Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0).SelectMany(c => c.Members).Select(m => m.UserInfo);
-            //IEnumerable<UserInfo> users2 = _context.Clubs.Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0).Select(c => c.Members.Select(m=>m.UserInfo).Where(x => !users.Contains(x))).First();
+           
             IEnumerable<UserInfo> returnUsers =  users.Union(users2);
             return returnUsers;
         }
@@ -51,7 +51,7 @@ namespace smartch.Controllers
             _context.UserInfo.Add(user);
             _context.SaveChanges();
             
-            return Created("AddUser", user);
+            return Created("users", user.Id);
         }
 
         // PUT api/values/5
