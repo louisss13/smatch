@@ -51,7 +51,7 @@ namespace smartch.Controllers
             _context.UserInfo.Add(user);
             _context.SaveChanges();
             
-            return Created("users", user.Id);
+            return Created("users/"+user.Id, user);
         }
 
         // PUT api/values/5

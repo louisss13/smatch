@@ -5,6 +5,7 @@ namespace model
 {
     public class Tournament
     {
+        public enum State { EnCours, Fini, EnPreparation };
         public long Id { get; set; }
         public string Name { get; set; }
         public Club Club { get; set; }
@@ -12,7 +13,7 @@ namespace model
 
         public DateTime BeginDate { get; set; }
         public DateTime EndDate { get; set; }
-        public int State { get; set; }
+        public State Etat { get; set; }
 
         public ICollection<TournamentJoueur> Participants { get; set; }
         public ICollection<TournamentAdmin> Admins { get; set; }
