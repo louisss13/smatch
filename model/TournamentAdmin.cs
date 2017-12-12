@@ -4,6 +4,6 @@
     {
         public long TournamentId { get; set; }
         public string AccountId { get; set; }
-        public Account User { get; set; }
+        public Account Account { get; set; }
     }
 }

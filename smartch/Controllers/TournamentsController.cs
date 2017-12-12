@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using model;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -22,9 +23,12 @@ namespace smartch.Controllers
 
         // GET: api/<controller>
         [HttpGet]
-        public IEnumerable<Tournament> Get()
+        public async Task<IEnumerable<Tournament>> Get()
         {
-            return null;
+            
+            Account currentUser = await GetCurrentUserAsync();
+            IEnumerable<Tournament> tournaments = _context.Tournaments.Include(c => c.Club).Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0);
+            return tournaments;
         }
 
         // GET api/<controller>/5
@@ -38,11 +42,23 @@ namespace smartch.Controllers
         [HttpPost]
         public async  Task<IActionResult> Post([FromBody]Tournament tournament)
         {
+            if(tournament.Club != null)
+            {
+                Club club = _context.Clubs.Where(c => c.ClubId == tournament.Club.ClubId).First();
+                if(club == null)
+                {
+                    return BadRequest("Club not exist");
+                }
+                tournament.Club = club;
+            }
             Account currentUser = await GetCurrentUserAsync();
-            TournamentAdmin tournamentAdmin = new TournamentAdmin() { User = currentUser };
+            TournamentAdmin tournamentAdmin = new TournamentAdmin() { Account = currentUser };
 
             tournament.Admins = new List<TournamentAdmin>();
             tournament.Admins.Add(tournamentAdmin);
+
+
+
             _context.Tournaments.Add(tournament);
             _context.SaveChanges();
             return Created("tournament/"+tournament.Id, tournament);

@@ -27,7 +27,7 @@ namespace smartch.Controllers
         {
             Account currentUser = await GetCurrentUserAsync();
             IEnumerable<UserInfo> users = _context.UserInfo.Include(u => u.Adresse).Where(u=> u.CreatedBy == currentUser) ;
-            IEnumerable<UserInfo> users2 = _context.Clubs.Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0).SelectMany(c => c.Members).Select(m => m.UserInfo);
+            IEnumerable<UserInfo> users2 = _context.Clubs.Include(c=>c.Tournaments).Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0).SelectMany(c => c.Members).Select(m => m.UserInfo);
            
             IEnumerable<UserInfo> returnUsers =  users.Union(users2);
             return returnUsers;

@@ -7,6 +7,7 @@ using model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -26,7 +27,7 @@ namespace smartch.Controllers
         {
             Account currentUser = await GetCurrentUserAsync();
 
-            return _context.Clubs.Where(c => c.Admins.Where(a=>a.Account == currentUser).Count() > 0); 
+            return _context.Clubs.Include(c => c.Tournaments).Where(c => c.Admins.Where(a=>a.Account == currentUser).Count() > 0); 
            // return new Club[] { new Club() { Name="TEnnis1"}, new Club() { Name = "Foootttt1" } };
         }
 

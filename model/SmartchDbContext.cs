@@ -24,6 +24,11 @@ namespace model
         {
           
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Tournament>()
+            .HasOne(t => t.Club)
+            .WithMany(c => c.Tournaments);
+
             modelBuilder.Entity<ClubAdmins>().HasKey(x => new { x.ClubId, x.AccountId });
             
             modelBuilder.Entity<ClubMember>().HasKey(x => new { x.ClubId, x.UserInfoId });
