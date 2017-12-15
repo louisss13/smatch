@@ -28,7 +28,7 @@ namespace model
 
         public DateTime BeginDate { get; set; }
         public DateTime EndDate { get; set; }
-        public State Etat { get; set; }
+        public ETournamentState Etat { get; set; }
 
         public ICollection<TournamentJoueur> Participants { get; set; }
         public ICollection<TournamentAdmin> Admins { get; set; }

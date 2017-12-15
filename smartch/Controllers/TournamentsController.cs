@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using model;
+using smartch.PostModel;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -23,44 +24,64 @@ namespace smartch.Controllers
 
         // GET: api/<controller>
         [HttpGet]
-        public async Task<IEnumerable<Tournament>> Get()
+        public async Task<IEnumerable<TournamentListDTO>> Get()
         {
             
             Account currentUser = await GetCurrentUserAsync();
-            IEnumerable<Tournament> tournaments = _context.Tournaments.Include(c => c.Club).Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0);
-            return tournaments;
+            IEnumerable<Tournament> tournaments = _context.Tournaments.Include(c => c.Club).Include(t=>t.Address).Include(t=>t.Participants).Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0);
+            List<TournamentListDTO> tournamentDTO = new List<TournamentListDTO>();
+            foreach (Tournament t in tournaments)
+            {
+                tournamentDTO.Add(new TournamentListDTO(t));
+            }
+            return tournamentDTO;
         }
 
         // GET api/<controller>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<TournamentDTO> GetAsync(long id)
         {
-            return "value";
+            Account currentUser = await GetCurrentUserAsync();
+            var tournament = _context.Tournaments.Where(t=>t.Id == id).Include(c => c.Club).Include(t => t.Address).Include(t => t.Participants).Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0).Select(t=>new TournamentDTO(t));
+            return tournament as TournamentDTO;
         }
 
         // POST api/<controller>
         [HttpPost]
-        public async  Task<IActionResult> Post([FromBody]Tournament tournament)
+        public async  Task<IActionResult> Post([FromBody]TournamentListDTO tournament)
         {
-            if(tournament.Club != null)
-            {
-                Club club = _context.Clubs.Where(c => c.ClubId == tournament.Club.ClubId).First();
-                if(club == null)
-                {
-                    return BadRequest("Club not exist");
-                }
-                tournament.Club = club;
-            }
             Account currentUser = await GetCurrentUserAsync();
             TournamentAdmin tournamentAdmin = new TournamentAdmin() { Account = currentUser };
-
-            tournament.Admins = new List<TournamentAdmin>();
-            tournament.Admins.Add(tournamentAdmin);
-
-
-
-            _context.Tournaments.Add(tournament);
+            Club club = null;
+            if (tournament.ClubId >= 0)
+            {
+                club = _context.Clubs.Where(c => c.ClubId == tournament.ClubId).First();
+                if (club == null)
+                {
+                    return BadRequest("Club not exist");
+                }  
+            }
+            List<TournamentJoueur> participants = new List<TournamentJoueur>();
+            foreach(long participantId in tournament.ParticipantsId){
+                TournamentJoueur tournamentJoueur = new TournamentJoueur() { User = _context.UserInfo.First(u=> u.Id == participantId) };
+                participants.Add(tournamentJoueur);
+            }
+            Tournament newTournament = new Tournament()
+            {
+                Club = club,
+                Admins = new List<TournamentAdmin>() { tournamentAdmin },
+                Address = tournament.Address,
+                BeginDate = tournament.BeginDate,
+                EndDate = tournament.EndDate,
+                Etat = tournament.Etat,
+                Name = tournament.Name,
+                Participants = participants
+        };
+           
+            _context.Tournaments.Add(newTournament);
             _context.SaveChanges();
+
+            tournament.Id = newTournament.Id;
             return Created("tournament/"+tournament.Id, tournament);
         }
 
