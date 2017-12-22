@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace model
 {
@@ -17,6 +18,8 @@ namespace model
         public Address Adresse { get; set; }
         public DateTime Birthday { get; set; }
         public Account CreatedBy { get; set; }
+        
+        public Account Owner { get; set; }
 
 
     }

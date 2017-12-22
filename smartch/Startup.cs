@@ -37,8 +37,9 @@ namespace smartch
             // Add framework services.
             services.AddOptions();
 
-            // string connectionString = @"Data Source=smartchserver.database.windows.net;Initial Catalog = smartchDb; User Id = louisdeMahieu; Password = DeSmarch$MahiLoui_*";
-           
+            string connectionString = @"Data Source=smartchserver.database.windows.net;Initial Catalog = smartchDb; User Id = louisdeMahieu; Password = DeSmarch$MahiLoui_*";
+            //string connectionString = @"Data Source=vm-sql2.iesn.be\Stu3ig;Initial Catalog = 1718_etu35869_DB; User Id = 1718_etu35869; Password = CoyPA3)55mg";
+
             // Get options from app settings
             var jwtAppSettingOptions = Configuration.GetSection(nameof(JwtIssuerOptions));
 
@@ -68,8 +69,7 @@ namespace smartch
                 options.SigningCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256);
             });
 
-            string connectionString = @"Data Source=vm-sql2.iesn.be\Stu3ig;Initial Catalog = 1718_etu35869_DB; User Id = 1718_etu35869; Password = CoyPA3)55mg";
-
+            
             services.AddDbContext<SmartchDbContext>(options =>
                 options.UseSqlServer(connectionString));
 

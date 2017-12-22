@@ -14,5 +14,14 @@ namespace smartch.PostModel
             Email = account.Email;
         }
 
+        public Account GetAccount()
+        {
+            return new Account()
+            {
+                Id = this.Id,
+                Email = this.Email
+            };
+        }
+
     }
 }

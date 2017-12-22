@@ -24,7 +24,7 @@ namespace smartch.PostModel
         public ICollection<UserDTO> Participants { get; set; }
         public ICollection<AccountDTO> Admins { get; set; }
 
-        public ICollection<Match> Matches { get; set; }
+        public ICollection<MatchDTO> Matches { get; set; }
         public TournamentDTO() { }
         public TournamentDTO(Tournament tournament)
         {

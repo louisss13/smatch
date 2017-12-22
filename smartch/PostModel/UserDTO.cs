@@ -18,6 +18,7 @@ namespace smartch.PostModel
         public UserDTO() { }
         public UserDTO(UserInfo userInfo)
         {
+            Id = userInfo.Id;
             Name = userInfo.Name;
             FirstName = userInfo.FirstName;
             Email = userInfo.Email;
@@ -25,6 +26,21 @@ namespace smartch.PostModel
             Adresse = userInfo.Adresse;
             Birthday = userInfo.Birthday;
             CreatedBy = new AccountDTO(userInfo.CreatedBy);
+        }
+
+        public UserInfo getUser() {
+            return new UserInfo()
+            {
+                Id = this.Id,
+                Name = this.Name,
+                FirstName = this.FirstName,
+                Email = this.Email,
+                Phone = this.Phone,
+                Adresse = this.Adresse,
+                Birthday = this.Birthday,
+                
+                CreatedBy = (this.CreatedBy != null)?this.CreatedBy.GetAccount(): null
+            };
         }
     }
 }

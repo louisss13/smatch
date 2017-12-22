@@ -33,6 +33,18 @@ namespace smartch.Controllers
             return returnUsers;
         }
 
+        [HttpGet]
+        [Route("api/[controller]/account")]
+        public async Task<IEnumerable<UserInfo>> GetAccount()
+        {
+            Account currentUser = await GetCurrentUserAsync();
+            IEnumerable<UserInfo> users = _context.UserInfo.Include(u => u.Adresse).Where(u => u.CreatedBy == currentUser && u.Owner != null);
+            IEnumerable<UserInfo> users2 = _context.Clubs.Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0).SelectMany(c => c.Members).Select(m => m.UserInfo).Where(u=>u.Owner != null);
+
+            IEnumerable<UserInfo> returnUsers = users.Union(users2);
+            return returnUsers;
+        }
+
         // GET api/values/5
         [HttpGet("{id}")]
         public UserInfo Get(int id)

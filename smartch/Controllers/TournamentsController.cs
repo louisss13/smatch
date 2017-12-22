@@ -87,8 +87,41 @@ namespace smartch.Controllers
 
         // PUT api/<controller>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        public async Task<IActionResult> PutAsync(int id, [FromBody]TournamentDTO value)
         {
+            Account currentUser = await GetCurrentUserAsync();
+            Tournament tournament = _context.Tournaments.Where(t => t.Id == id && t.Admins.Where(a => a.Account == currentUser).Count() > 0).First();
+            List<Match> matchs = new List<Match>();
+            foreach(MatchDTO match in value.Matches)
+            {
+                Match newMatch = match.GetMacth();
+                UserInfo user1 = _context.UserInfo.Where(u => u.Id == match.Joueur1Id).First();
+                UserInfo user2 = _context.UserInfo.Where(u => u.Id == match.Joueur2Id).First();
+                
+
+                newMatch.Joueur1 = user1;
+                newMatch.Joueur2 = user2;
+                newMatch.Arbitre = currentUser;
+
+                matchs.Add(newMatch);
+            }
+
+            if (tournament != null)
+            {
+
+                //tournament.Club = value.Club,
+                //tournament.Admins = value.Admins ;
+                tournament.Address = value.Address;
+                tournament.BeginDate = value.BeginDate;
+                tournament.EndDate = value.EndDate;
+                tournament.Etat = value.Etat;
+                tournament.Name = value.Name;
+                tournament.Matches = matchs;
+                //tournament.Participants = value.Participants;
+                _context.SaveChanges();
+                return Ok();
+            }
+            return Unauthorized();
 
         }
 

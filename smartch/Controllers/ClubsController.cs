@@ -40,7 +40,7 @@ namespace smartch.Controllers
         }
 
         // POST api/values
-        [HttpPost]
+        [HttpPost ]
         public async Task<IActionResult> Post([FromBody]ClubDTO club)
         {
 
