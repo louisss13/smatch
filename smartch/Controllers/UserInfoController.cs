@@ -33,8 +33,7 @@ namespace smartch.Controllers
             return returnUsers;
         }
 
-        [HttpGet]
-        [Route("api/[controller]/account")]
+        [HttpGet("account")]
         public async Task<IEnumerable<UserInfo>> GetAccount()
         {
             Account currentUser = await GetCurrentUserAsync();
@@ -47,7 +46,7 @@ namespace smartch.Controllers
 
         // GET api/values/5
         [HttpGet("{id}")]
-        public UserInfo Get(int id)
+        public UserInfo Get(long id)
         {
             UserInfo user = _context.UserInfo.Find(id);
             return user;

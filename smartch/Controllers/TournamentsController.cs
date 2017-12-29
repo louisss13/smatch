@@ -39,11 +39,37 @@ namespace smartch.Controllers
 
         // GET api/<controller>/5
         [HttpGet("{id}")]
-        public async Task<TournamentDTO> GetAsync(long id)
+        public async Task<TournamentDTO> GetTournament(long id)
         {
             Account currentUser = await GetCurrentUserAsync();
-            var tournament = _context.Tournaments.Where(t=>t.Id == id).Include(c => c.Club).Include(t => t.Address).Include(t => t.Participants).Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0).Select(t=>new TournamentDTO(t));
-            return tournament as TournamentDTO;
+            var tournaments = _context.Tournaments.Where( t => t.Id == id)
+                .Include(t => t.Admins)
+                .Include(t => t.Participants).ThenInclude(p => p.User)
+                .Include(c => c.Club)
+                .Include(t => t.Address)
+                .Include(t => t.Matches).ThenInclude(m => m.Joueur1)
+                .Include(t => t.Matches).ThenInclude(m => m.Joueur2)
+                .Include(t => t.Matches).ThenInclude(m => m.Arbitre); 
+            Tournament tournament = tournaments.Single<Tournament>();
+            if (tournament.Admins.Where(a => a.Account == currentUser).Count() > 0)
+            {
+                return new TournamentDTO(tournament);
+            }
+            else
+                return  null;
+
+            
+        }
+
+        
+        [HttpGet("{id}/participants")]
+        public async Task<IEnumerable<UserDTO>> GetParticipantsAsync(long id)
+        {
+            Account currentUser = await GetCurrentUserAsync();
+            var participants = _context.Tournaments.Include(t => t.Participants).ThenInclude(p => p.User).Where(t => t.Id == id).Select(t => t.Participants);
+            var user = participants.First().ToList().Select(u=> new UserDTO(u.User));
+            var users = _context.Tournaments.Include(t => t.Participants).ThenInclude(p=> p.User).Where(t => t.Id == id).Select(t=>t.Participants.Select(u => new UserDTO(u.User)));
+            return user as IEnumerable<UserDTO>;
         }
 
         // POST api/<controller>

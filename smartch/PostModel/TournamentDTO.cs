@@ -36,12 +36,7 @@ namespace smartch.PostModel
             BeginDate = tournament.BeginDate;
             EndDate = tournament.EndDate;
             Etat = tournament.Etat;
-            List<UserDTO> users = new List<UserDTO>();
-            foreach (TournamentJoueur joueur in tournament.Participants)
-            {
-                users.Add(new UserDTO(joueur.User));
-            }
-            Participants = users;
+            Participants = ToUserDTO(tournament.Participants);
 
             List<AccountDTO> account = new List<AccountDTO>();
             /*foreach (TournamentAdmin admin in tournament.Admins)
@@ -49,6 +44,26 @@ namespace smartch.PostModel
                 account.Add(admin.Account);
             }*/
             Admins = account;
+            Matches = ToMatchesDTO(tournament.Matches);
+        }
+
+        private ICollection<MatchDTO> ToMatchesDTO(ICollection<Match> matches)
+        {
+            List<MatchDTO> matchs = new List<MatchDTO>();
+            foreach (Match match in matches)
+            {
+                matchs.Add(new MatchDTO(match));
+            }
+            return  matchs;
+        }
+        private ICollection<UserDTO> ToUserDTO(ICollection<TournamentJoueur> participants)
+        {
+            List<UserDTO> users = new List<UserDTO>();
+            foreach (TournamentJoueur joueur in participants)
+            {
+                users.Add(new UserDTO(joueur.User));
+            }
+            return users;
         }
     }
 }

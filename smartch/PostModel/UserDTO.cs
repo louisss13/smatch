@@ -25,7 +25,8 @@ namespace smartch.PostModel
             Phone = userInfo.Phone;
             Adresse = userInfo.Adresse;
             Birthday = userInfo.Birthday;
-            CreatedBy = new AccountDTO(userInfo.CreatedBy);
+            if(userInfo.CreatedBy != null)
+                CreatedBy = new AccountDTO(userInfo.CreatedBy);
         }
 
         public UserInfo getUser() {
