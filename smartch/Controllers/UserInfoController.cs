@@ -57,11 +57,24 @@ namespace smartch.Controllers
         public async Task<IActionResult> Post([FromBody]UserInfo user)
         {
             if (user == null) { return BadRequest(); }
+
             Account currentUser = await GetCurrentUserAsync();
             user.CreatedBy = currentUser;
             _context.UserInfo.Add(user);
             _context.SaveChanges();
-            
+            var linkAccountRaw = _context.Account.Where(a => a.Email == user.Email);
+            if(linkAccountRaw.Count() > 0)
+            {
+                Account linkAccount = linkAccountRaw.Single();
+                if (linkAccount.Infos == null)
+                {
+                    linkAccount.Infos = new List<UserInfo>();
+                }
+                linkAccount.Infos.Add(user);
+                _context.SaveChanges();
+            }
+           
+
             return Created("users/"+user.Id, user);
         }
 

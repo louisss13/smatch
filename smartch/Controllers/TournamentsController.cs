@@ -150,6 +150,63 @@ namespace smartch.Controllers
             return Unauthorized();
 
         }
+        [HttpPost("{idTournament}/matchs/{matchId}")]
+        public IActionResult AddPoint(int idTournament, long matchId, [FromBody]PointDTO point)
+        {
+            var matchQuery = _context.Tournaments.Where(t => t.Id == idTournament).Select(t => t.Matches.Where(m => m.Id == matchId).First());
+            Match match = matchQuery as Match;
+            int maxOrder = match.Score.Max(p => p.Order);
+            point.Order = maxOrder + 1;
+            return Created("", point);
+        }
+        [HttpPost("{idTournament}")]
+        public IActionResult AddMatch(int idTournament, long matchId, [FromBody]MatchDTO matchDto)
+        {
+            Match match = matchDto.GetMacth();
+            var tournamentQuery = _context.Tournaments.Where(t => t.Id == idTournament).First();
+            Tournament tounrament = tournamentQuery as Tournament;
+            tounrament.Matches.Add(match);
+            _context.SaveChanges();
+
+            return Created("", match);
+        }
+
+        [HttpPut("{idTournament}/matchs/{matchId}")]
+        public IActionResult UpdateMatch(int idTournament, long matchId, [FromBody]MatchDTO matchDTO)
+        {
+            var tournamentQuery = _context.Tournaments
+                .Where(t => t.Id == idTournament)
+                .Include(t => t.Matches).ThenInclude(m => m.Joueur1)
+                .Include(t => t.Matches).ThenInclude(m => m.Joueur2)
+                .Include(t => t.Matches).ThenInclude(m => m.Arbitre).First();
+            var matchQuery = tournamentQuery.Matches.Where(m => m.Id == matchId).First();
+
+            Match matchInDb = matchQuery as Match;
+            
+            Match match = matchDTO.GetMacth();
+            //if (matchDTO.Arbitre != null)
+            //    match.Arbitre = matchDTO.Arbitre;
+            if (match.Joueur1 != null && match.Joueur1.Id != matchInDb.Joueur1.Id)
+            {
+                UserInfo joueur1 = _context.UserInfo.Find(match.Joueur1.Id);
+                matchInDb.Joueur1 = joueur1;
+            }
+                
+            if (match.Joueur2 != null && match.Joueur2.Id != matchInDb.Joueur2.Id)
+            {
+                UserInfo joueur2 = _context.UserInfo.Find(match.Joueur2.Id);
+                matchInDb.Joueur2 = joueur2;
+            }
+               
+            if (match.Phase > 0)
+                matchInDb.Phase = match.Phase;
+            if (match.DebutPrevu != null)
+                matchInDb.DebutPrevu = match.DebutPrevu;
+            
+                matchInDb.DebutPrevu = match.DebutPrevu;
+            _context.SaveChanges();
+            return Ok(matchInDb);
+        }
 
         // DELETE api/<controller>/5
         [HttpDelete("{id}")]

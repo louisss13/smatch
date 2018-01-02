@@ -1,18 +1,17 @@
-﻿
+﻿using model;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
+using System.Threading.Tasks;
 
-namespace model
+namespace smartch.PostModel
 {
-    public class Point
+    public class PointDTO
     {
         public long Id { get; set; }
         public EJoueurs Joueur { get; set; }
-        
+        public int Value { get; set; }
         public int Order { get; set; }
-        
+        public long MatchId { get; set; }
     }
 }

@@ -10,8 +10,8 @@ namespace smartch.PostModel
     {
         public long Id { get; set; }
         public int Phase { get; set; }
-        public DateTime DebutPrevu { get; set; }
-        public DateTime DebutReel { get; set; }
+        public TimeSpan DebutPrevu { get; set; }
+        
         public UserDTO Joueur1 { get; set; }
         public UserDTO Joueur2 { get; set; }
         public long Joueur1Id { get; set; }
@@ -26,7 +26,7 @@ namespace smartch.PostModel
             Id = match.Id;
             Phase = match.Phase;
             DebutPrevu = match.DebutPrevu;
-            DebutReel = match.DebutReel;
+           
             Joueur1 = new UserDTO(match.Joueur1);
             Joueur2 = new UserDTO(match.Joueur2);
             if (match.Joueur1 != null)
@@ -45,7 +45,7 @@ namespace smartch.PostModel
                 Id = this.Id,
                 Phase = this.Phase,
                 DebutPrevu = this.DebutPrevu,
-                DebutReel = this.DebutReel,
+             
                 Joueur1 = (this.Joueur1 != null)?this.Joueur1.getUser():null,
                 Joueur2 = (this.Joueur2 != null) ? this.Joueur2.getUser() : null,
                 Arbitre = (this.Arbitre != null) ? this.Arbitre.GetAccount() : null,

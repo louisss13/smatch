@@ -8,10 +8,13 @@ using model;
 using Microsoft.AspNetCore.Identity;
 using smartch.PostModel;
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 
 namespace smartch.Controllers
 {
-
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     public class AccountController : BaseController
     {
@@ -22,16 +25,18 @@ namespace smartch.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> Post([FromBody]NewUserDTO dto)
         {
-
+            ICollection<UserInfo> profils = _context.UserInfo.Where(u => u.Email == dto.Email.ToLower()).ToList();
             var newAccount = new Account
             {
                 UserName = dto.Email.ToLower(),
                 Email = dto.Email,
                 DateInscription = DateTime.Now,
                 DateDerniereConnection = DateTime.Now,
-                Active = 1
+                Active = 1, 
+                Infos = profils
             };
             IdentityResult result = await _userManager.CreateAsync(newAccount, dto.Password);
             
@@ -40,6 +45,20 @@ namespace smartch.Controllers
             }
             
             return Created("test", newAccount);
+        }
+        [HttpGet]
+        public async Task<AccountDTO> GetAccount()
+        {
+            Account currentUser = await GetCurrentUserAsync();
+            var completeCurrentUserRaw = _context.Account.Where(a => a.Id == currentUser.Id).Include(a=>a.Infos);
+            if(completeCurrentUserRaw.Count() > 0)
+            {
+                Account completeCurrentUser = completeCurrentUserRaw.Single();
+                AccountDTO accountDTO = new AccountDTO(completeCurrentUser);
+                return accountDTO;
+            }
+            
+            return new AccountDTO(currentUser);
         }
     }
    

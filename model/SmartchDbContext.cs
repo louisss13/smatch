@@ -15,6 +15,7 @@ namespace model
         public DbSet<Address> Addresses { get; set; }
         public DbSet<Tournament> Tournaments { get; set; }
         public DbSet<Account> Account { get; set; }
+        //public DbSet<Match> Matchs { get; set; }
 
 
         public SmartchDbContext(DbContextOptions options) : base(options) {
