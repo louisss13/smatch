@@ -27,9 +27,20 @@ namespace model
           
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Tournament>()
-            .HasOne(t => t.Club)
-            .WithMany(c => c.Tournaments);
+            modelBuilder.Entity<Match>()
+                .HasOne(m => m.Joueur1)
+                .WithMany()
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Match>()
+                .HasOne(m => m.Joueur2)
+                .WithMany()
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+
+
+            modelBuilder.Entity<Point>()
+            .HasIndex(p => new { p.MatchId, p.Order }).IsUnique();
 
             modelBuilder.Entity<ClubAdmins>().HasKey(x => new { x.ClubId, x.AccountId });
             

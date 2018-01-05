@@ -19,26 +19,23 @@ namespace smartch.Controllers
     public class ClubsController : BaseController
     {
         public ClubsController(UserManager<Account> uMgr, SmartchDbContext dbContext) : base(uMgr, dbContext)
-        {
-        }
+        {}
 
-        // GET: api/values
         [HttpGet]
         public async Task<IEnumerable<Club>> Get()
         {
             Account currentUser = await GetCurrentUserAsync();
-
             return _context.Clubs.Include(c => c.Tournaments).Where(c => c.Admins.Where(a=>a.Account == currentUser).Count() > 0); 
           
         }
 
-        // GET api/values/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpGet("user/{idUser}")]
+        public IEnumerable<ClubDTO> Get(int idUser)
         {
-            return "value";
+            var clubs = _context.Clubs.Where(c => c.Members.Where(m => m.UserInfo.Id == idUser).Count() > 0).Select(c=>new ClubDTO(c)).ToList();
+            return clubs;
         }
-
+        
         // POST api/values
         [HttpPost ]
         public async Task<IActionResult> Post([FromBody]ClubDTO club)
@@ -74,7 +71,7 @@ namespace smartch.Controllers
 
             _context.Clubs.Add(newClub);
             _context.SaveChanges();
-            club.ClubId = newClub.ClubId;
+            club.ClubId = newClub.Id;
 
             return Created("clubs",club );
         }

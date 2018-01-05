@@ -1,5 +1,7 @@
-﻿using System;
+﻿using model.Validator;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace model
@@ -7,11 +9,12 @@ namespace model
     public class Tournament
     {
         private Club _club;
-        public enum State { EnCours, Fini, EnPreparation };
-        public long Id { get; set; }
-        public string Name { get; set; }
 
-        public long ClubId { get; set; }
+        public long Id { get; set; }
+       
+        
+        [Required]
+        public string Name { get; set; }
         
         public Club Club {
             get
@@ -21,11 +24,13 @@ namespace model
             set
             {
                 _club = value;
-                ClubId = _club.ClubId;
+                
             }
         }
+        [Required]
         public Address Address { get; set; }
 
+        [DateBiggerOrSmallerThan("BeginDate", "EndDate")]
         public DateTime BeginDate { get; set; }
         public DateTime EndDate { get; set; }
         public ETournamentState Etat { get; set; }

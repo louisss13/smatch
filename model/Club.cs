@@ -1,16 +1,23 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace model
 {
     public class Club
     {
-        public long ClubId { get; set; }
+        public long Id { get; set; }
+        [Required]
         public String Name { get; set; }
+        [Required]
         public Address Adresse{ get; set; }
+        [Required]
+        [EmailAddress]
         public String ContactMail { get; set; }
+        [Required]
+        [Phone]
         public String Phone { get; set; }
         public List<ClubAdmins> Admins { get; set; } = new List<ClubAdmins>();
         public List<ClubMember> Members { get; set; }
@@ -24,12 +31,12 @@ namespace model
         {
             var club = obj as Club;
             return club != null &&
-                   ClubId == club.ClubId;
+                   Id == club.Id;
         }
 
         public override int GetHashCode()
         {
-            return 1774844376 + ClubId.GetHashCode();
+            return 1774844376 + Id.GetHashCode();
         }
     }
 }

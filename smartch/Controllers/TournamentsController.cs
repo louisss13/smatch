@@ -79,13 +79,17 @@ namespace smartch.Controllers
             Account currentUser = await GetCurrentUserAsync();
             TournamentAdmin tournamentAdmin = new TournamentAdmin() { Account = currentUser };
             Club club = null;
-            if (tournament.ClubId >= 0)
+            if (tournament.ClubId > 0)
             {
-                club = _context.Clubs.Where(c => c.ClubId == tournament.ClubId).First();
+                club = _context.Clubs.Where(c => c.Id == tournament.ClubId).First();
                 if (club == null)
                 {
                     return BadRequest("Club not exist");
                 }  
+            }
+            else
+            {
+                return BadRequest("Club must be selected");
             }
             List<TournamentJoueur> participants = new List<TournamentJoueur>();
             foreach(long participantId in tournament.ParticipantsId){
@@ -128,7 +132,7 @@ namespace smartch.Controllers
                 newMatch.Joueur1 = user1;
                 newMatch.Joueur2 = user2;
                 newMatch.Arbitre = currentUser;
-
+                newMatch.Emplacement = "terrain 1";
                 matchs.Add(newMatch);
             }
 
@@ -162,7 +166,10 @@ namespace smartch.Controllers
         [HttpPost("{idTournament}")]
         public IActionResult AddMatch(int idTournament, long matchId, [FromBody]MatchDTO matchDto)
         {
+            
             Match match = matchDto.GetMacth();
+            if (match.Emplacement == null)
+                match.Emplacement = "Terrain 1";
             var tournamentQuery = _context.Tournaments.Where(t => t.Id == idTournament).First();
             Tournament tounrament = tournamentQuery as Tournament;
             tounrament.Matches.Add(match);

@@ -44,7 +44,7 @@ namespace smartch.Controllers
                 return BadRequest(result.Errors);
             }
             
-            return Created("test", newAccount);
+            return Created("", new AccountDTO(newAccount));
         }
         [HttpGet]
         public async Task<AccountDTO> GetAccount()

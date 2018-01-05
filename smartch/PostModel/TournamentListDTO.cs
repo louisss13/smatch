@@ -26,7 +26,7 @@ namespace smartch.PostModel
         {
             Id = tournament.Id;
             Name = tournament.Name;
-            ClubId = tournament.Club.ClubId;
+            ClubId = tournament.Club.Id;
            
             Address = tournament.Address;
             BeginDate = tournament.BeginDate;

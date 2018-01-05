@@ -20,7 +20,7 @@ namespace smartch.PostModel
         public ClubDTO(Club club)
         {
             Name = club.Name;
-            ClubId = club.ClubId;
+            ClubId = club.Id;
             Adresse = club.Adresse;
             ContactMail = club.ContactMail;
             Phone = club.Phone;
