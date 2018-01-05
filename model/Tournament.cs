@@ -29,10 +29,13 @@ namespace model
         }
         [Required]
         public Address Address { get; set; }
-
+        [Required]
         [DateBiggerOrSmallerThan("BeginDate", "EndDate")]
         public DateTime BeginDate { get; set; }
+        [Required]
+        [DateBiggerOrSmallerThan("BeginDate", "EndDate")]
         public DateTime EndDate { get; set; }
+        [Required]
         public ETournamentState Etat { get; set; }
 
         public ICollection<TournamentJoueur> Participants { get; set; }
