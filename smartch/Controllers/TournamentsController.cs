@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using model;
 using smartch.PostModel;
+using smartch.PostModel.Validator;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -28,7 +29,11 @@ namespace smartch.Controllers
         {
             
             Account currentUser = await GetCurrentUserAsync();
-            IEnumerable<Tournament> tournaments = _context.Tournaments.Include(c => c.Club).Include(t=>t.Address).Include(t=>t.Participants).Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0);
+            IEnumerable<Tournament> tournaments = _context.Tournaments
+                .Include(c => c.Club)
+                .Include(t=>t.Address)
+                .Include(t=>t.Participants)
+                .Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0);
             List<TournamentListDTO> tournamentDTO = new List<TournamentListDTO>();
             foreach (Tournament t in tournaments)
             {
@@ -39,80 +44,132 @@ namespace smartch.Controllers
 
         // GET api/<controller>/5
         [HttpGet("{id}")]
-        public async Task<TournamentDTO> GetTournament(long id)
+        public async Task<IActionResult> GetTournament(long id)
         {
             Account currentUser = await GetCurrentUserAsync();
-            var tournaments = _context.Tournaments.Where( t => t.Id == id)
+            var tournaments = _context.Tournaments.Where( t => t.Id == id && t.Admins.Where(a=>a.Account == currentUser).Count()>0)
                 .Include(t => t.Admins)
                 .Include(t => t.Participants).ThenInclude(p => p.User)
                 .Include(c => c.Club)
                 .Include(t => t.Address)
                 .Include(t => t.Matches).ThenInclude(m => m.Joueur1)
                 .Include(t => t.Matches).ThenInclude(m => m.Joueur2)
-                .Include(t => t.Matches).ThenInclude(m => m.Arbitre); 
-            Tournament tournament = tournaments.Single<Tournament>();
-            if (tournament.Admins.Where(a => a.Account == currentUser).Count() > 0)
-            {
-                return new TournamentDTO(tournament);
+                .Include(t => t.Matches).ThenInclude(m => m.Arbitre) 
+                .Include(t => t.Matches).ThenInclude(m => m.Score);
+            if (tournaments.Count() > 0) { 
+                Tournament tournament = tournaments.Single<Tournament>();
+                return Ok(new TournamentDTO(tournament));
             }
             else
-                return  null;
-
-            
+            {
+                List<Error> errors = new List<Error>() { new Error() {
+                    Code = "TournamentUnknowOrUnAuthorize",
+                    Description = "Le tournois n'as pas été trouvé ou vous n'avez pas l'authorisation"
+                } };
+                return BadRequest( errors);
+            }
         }
 
         
         [HttpGet("{id}/participants")]
-        public async Task<IEnumerable<UserDTO>> GetParticipantsAsync(long id)
+        public async Task<IActionResult> GetParticipantsAsync(long id)
         {
             Account currentUser = await GetCurrentUserAsync();
-            var participants = _context.Tournaments.Include(t => t.Participants).ThenInclude(p => p.User).Where(t => t.Id == id).Select(t => t.Participants);
-            var user = participants.First().ToList().Select(u=> new UserDTO(u.User));
-            var users = _context.Tournaments.Include(t => t.Participants).ThenInclude(p=> p.User).Where(t => t.Id == id).Select(t=>t.Participants.Select(u => new UserDTO(u.User)));
-            return user as IEnumerable<UserDTO>;
+            var participants = _context.Tournaments
+                .Where(t => t.Id == id && t.Admins.Where(a=>a.Account.Id == currentUser.Id).Count()>0)
+                .Include(t => t.Participants).ThenInclude(p => p.User)
+                .Select(t => t.Participants);
+            if (participants.Count() > 0)
+            { 
+                var user = participants.First().ToList().Select(u=> new UserDTO(u.User));
+                return Ok(user as IEnumerable<UserDTO>);
+            }
+            else
+            {
+                List<Error> errors = new List<Error>() { new Error() {
+                    Code = "TournamentUnknowOrUnAuthorize",
+                    Description = "Le tournois n'as pas été trouvé ou vous n'avez pas l'authorisation"
+                } };
+                return BadRequest(errors);
+            }
+
         }
 
         // POST api/<controller>
         [HttpPost]
         public async  Task<IActionResult> Post([FromBody]TournamentListDTO tournament)
         {
+            List<Error> errors = new List<Error>();
             Account currentUser = await GetCurrentUserAsync();
             TournamentAdmin tournamentAdmin = new TournamentAdmin() { Account = currentUser };
             Club club = null;
             if (tournament.ClubId > 0)
             {
-                club = _context.Clubs.Where(c => c.Id == tournament.ClubId).First();
-                if (club == null)
+                var rawClub = _context.Clubs
+                    .Where(c => c.Id == tournament.ClubId && c.Admins.Where(a=>a.Account.Id == currentUser.Id).Count() > 0);
+
+                if (rawClub.Count() <= 0)
                 {
-                    return BadRequest("Club not exist");
-                }  
+                    errors.Add( new Error() {
+                        Code = "ClubUnknowOrUnAuthorize",
+                        Description = "Le club n'as pas été trouvé ou vous n'avez pas l'authorisation"
+                    } );
+                    
+                }
+                else
+                    club = rawClub.First();
             }
             else
             {
-                return BadRequest("Club must be selected");
+                errors.Add( new Error() {
+                        Code = "ClubRequired",
+                        Description = "Le club ne peut pas être vide"
+                    } );
+                
             }
             List<TournamentJoueur> participants = new List<TournamentJoueur>();
             foreach(long participantId in tournament.ParticipantsId){
-                TournamentJoueur tournamentJoueur = new TournamentJoueur() { User = _context.UserInfo.First(u=> u.Id == participantId) };
-                participants.Add(tournamentJoueur);
+                UserInfo user = _context.UserInfo.First(u => u.Id == participantId && u.CreatedBy.Id == currentUser.Id);
+                if(user != null) { 
+                    TournamentJoueur tournamentJoueur = new TournamentJoueur() { User =  user};
+                    participants.Add(tournamentJoueur);
+                }
+                else
+                {
+                    errors.Add(new Error()
+                    {
+                        Code = "JoueurUnknowOrUnAuthorize",
+                        Description = "Un joueur est introuvable ou vous n'avez pas accès"
+                    });
+                    
+                }
             }
-            Tournament newTournament = new Tournament()
+            errors = TournamentListDTOValidator.Validate(tournament, errors);
+            if (errors.Count() > 0)
             {
-                Club = club,
-                Admins = new List<TournamentAdmin>() { tournamentAdmin },
-                Address = tournament.Address,
-                BeginDate = tournament.BeginDate,
-                EndDate = tournament.EndDate,
-                Etat = tournament.Etat,
-                Name = tournament.Name,
-                Participants = participants
-        };
-           
-            _context.Tournaments.Add(newTournament);
-            _context.SaveChanges();
+                Tournament newTournament = new Tournament()
+                {
+                    Club = club,
+                    Admins = new List<TournamentAdmin>() { tournamentAdmin },
+                    Address = tournament.Address,
+                    BeginDate = tournament.BeginDate,
+                    EndDate = tournament.EndDate,
+                    Etat = tournament.Etat,
+                    Name = tournament.Name,
+                    Participants = participants
+                };
 
-            tournament.Id = newTournament.Id;
-            return Created("tournament/"+tournament.Id, tournament);
+                _context.Tournaments.Add(newTournament);
+                _context.SaveChanges();
+                tournament.Id = newTournament.Id;
+                return Created("tournament/" + tournament.Id, tournament);
+            }
+            else
+            {
+                return BadRequest(errors);
+            }
+
+            
         }
 
         // PUT api/<controller>/5
@@ -120,7 +177,8 @@ namespace smartch.Controllers
         public async Task<IActionResult> PutAsync(int id, [FromBody]TournamentDTO value)
         {
             Account currentUser = await GetCurrentUserAsync();
-            Tournament tournament = _context.Tournaments.Where(t => t.Id == id && t.Admins.Where(a => a.Account == currentUser).Count() > 0).First();
+            Tournament tournament = _context.Tournaments
+                .Where(t => t.Id == id && t.Admins.Where(a => a.Account == currentUser).Count() > 0).First();
             List<Match> matchs = new List<Match>();
             foreach(MatchDTO match in value.Matches)
             {
@@ -154,15 +212,9 @@ namespace smartch.Controllers
             return Unauthorized();
 
         }
-        [HttpPost("{idTournament}/matchs/{matchId}")]
-        public IActionResult AddPoint(int idTournament, long matchId, [FromBody]PointDTO point)
-        {
-            var matchQuery = _context.Tournaments.Where(t => t.Id == idTournament).Select(t => t.Matches.Where(m => m.Id == matchId).First());
-            Match match = matchQuery as Match;
-            int maxOrder = match.Score.Max(p => p.Order);
-            point.Order = maxOrder + 1;
-            return Created("", point);
-        }
+
+       
+
         [HttpPost("{idTournament}")]
         public IActionResult AddMatch(int idTournament, long matchId, [FromBody]MatchDTO matchDto)
         {

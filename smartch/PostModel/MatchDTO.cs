@@ -1,4 +1,5 @@
-﻿using model;
+﻿using Business;
+using model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,11 +19,12 @@ namespace smartch.PostModel
         public long Joueur2Id { get; set; }
         public AccountDTO Arbitre { get; set; }
         public String Emplacement { get; set; }
+        public Score CalculatedScore { get; set; }
 
-        public ICollection<Point> Score { get; set; }
+        //public ICollection<Point> Score { get; set; }
 
         public MatchDTO() { }
-        public MatchDTO(Match match)
+        public MatchDTO(Match match, ICalculPoint CalculScore)
         {
             Id = match.Id;
             Phase = match.Phase;
@@ -37,7 +39,8 @@ namespace smartch.PostModel
                 Joueur2Id = match.Joueur2.Id;
             Arbitre = new AccountDTO(match.Arbitre);
 
-            Score = match.Score;
+            //Score = match.Score;
+            CalculatedScore = CalculScore.Calcul(match.Score);
         }
 
         public Match GetMacth()
@@ -53,7 +56,7 @@ namespace smartch.PostModel
                 Arbitre = (this.Arbitre != null) ? this.Arbitre.GetAccount() : null,
                 Emplacement = Emplacement,
 
-                Score = this.Score
+                //Score = this.Score
             };
         }
     }

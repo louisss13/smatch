@@ -28,6 +28,8 @@ namespace smartch.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Post([FromBody]NewUserDTO dto)
         {
+            List<Error> errors = new List<Error>();
+            
             ICollection<UserInfo> profils = _context.UserInfo.Where(u => u.Email == dto.Email.ToLower()).ToList();
             var newAccount = new Account
             {
@@ -47,7 +49,7 @@ namespace smartch.Controllers
             return Created("", new AccountDTO(newAccount));
         }
         [HttpGet]
-        public async Task<AccountDTO> GetAccount()
+        public async Task<IActionResult> GetAccount()
         {
             Account currentUser = await GetCurrentUserAsync();
             var completeCurrentUserRaw = _context.Account.Where(a => a.Id == currentUser.Id).Include(a=>a.Infos);
@@ -55,10 +57,17 @@ namespace smartch.Controllers
             {
                 Account completeCurrentUser = completeCurrentUserRaw.Single();
                 AccountDTO accountDTO = new AccountDTO(completeCurrentUser);
-                return accountDTO;
+                return Ok(accountDTO);
             }
-            
-            return new AccountDTO(currentUser);
+            List<Error> errors = new List<Error>()
+            {
+                new Error()
+                {
+                    Code = "AccountNotFound",
+                    Description = "L'identifiant du compte n'a pas été trouvé"
+                }
+            };
+            return BadRequest(errors);
         }
     }
    

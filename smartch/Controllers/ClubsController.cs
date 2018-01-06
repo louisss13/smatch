@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using smartch.PostModel;
+using System.Net.Mail;
+using smartch.PostModel.Validator;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -22,70 +24,80 @@ namespace smartch.Controllers
         {}
 
         [HttpGet]
-        public async Task<IEnumerable<Club>> Get()
+        public async Task<IActionResult> Get()
         {
             Account currentUser = await GetCurrentUserAsync();
-            return _context.Clubs.Include(c => c.Tournaments).Where(c => c.Admins.Where(a=>a.Account == currentUser).Count() > 0); 
+            return Ok(_context.Clubs.Where(c => c.Admins.Where(a=>a.Account == currentUser).Count() > 0).Include(c => c.Tournaments).Include(c=>c.Adresse)); 
           
         }
 
         [HttpGet("user/{idUser}")]
-        public IEnumerable<ClubDTO> Get(int idUser)
+        public async Task<IActionResult> Get(int idUser)
         {
-            var clubs = _context.Clubs.Where(c => c.Members.Where(m => m.UserInfo.Id == idUser).Count() > 0).Select(c=>new ClubDTO(c)).ToList();
-            return clubs;
+            Account currentUser = await GetCurrentUserAsync();
+            List<Error> errors = new List<Error>();
+            int isCorrectUser = _context.UserInfo.Where(u => u.Owner.Id == currentUser.Id && u.Id == idUser).Count();
+            if(isCorrectUser <= 0)
+            {
+                errors.Add(new Error()
+                {
+                    Code="UserInexistantOrInaccessible",
+                    Description="Cest utilisateur n'existe pas ou vous ne possédez pas les droits pour y accéder"
+                });
+                return BadRequest(errors);
+            }
+            var clubs = _context.Clubs.Where(c => c.Members.Where(m => m.UserInfo.Id == idUser).Count() > 0).Include(c=>c.Adresse).Select(c=>new ClubDTO(c)).ToList();
+            
+            return Ok(clubs);
         }
         
         // POST api/values
         [HttpPost ]
         public async Task<IActionResult> Post([FromBody]ClubDTO club)
         {
-
+            List<Error> errors = new List<Error>();
             Account currentUser = await GetCurrentUserAsync();
             List<ClubAdmins> listClubAdmin = new List<ClubAdmins>() { new ClubAdmins() { Account = currentUser  } };
             List<ClubMember> membres = new List<ClubMember>();
             foreach (UserInfo user in club.Members)
             {
-                UserInfo userInfo = _context.UserInfo.Where(u => u.Id == user.Id).First();
-                membres.Add(new ClubMember()
+                var userRaw = _context.UserInfo.Where(u => u.Id == user.Id && u.CreatedBy.Id == currentUser.Id);
+                if (userRaw.Count() > 0) { 
+                    UserInfo userInfo = userRaw.First();
+                    membres.Add(new ClubMember()
+                    {
+                        UserInfo = userInfo
+                    });
+                }
+                else
                 {
-                    UserInfo = userInfo
-                });
+                    errors.Add(new Error() {
+                        Code = "MembersUnAuthorizeOrUnknow",
+                        Description="Un des membres que vous essayer d'ajouter n'existe pas ou vous n'êtes pas authoriser a y accéder"
+                    });
+                }
             }
-            /*
-            foreach (UserInfo user in club.Admins)
-            {
-                ClubAdmins newClubAdmins = new ClubAdmins();
-                newClubAdmins.Account = _context.UserInfo.Where(u => u.Id == user.Id).Select(u=>u.Account);
-            }*/
+            errors = ClubDaoValidator.Validate(club, errors);
+            if (errors.Count <= 0) { 
+                Club newClub = new Club
+                {
+                    Admins = listClubAdmin,
+                    Members = membres, 
+                    Adresse = club.Adresse,
+                    ContactMail = club.ContactMail,
+                    Name = club.Name,
+                    Phone = club.Phone
+                };
 
-            Club newClub = new Club
-            {
-                Admins = listClubAdmin,
-                Members = membres, 
-                Adresse = club.Adresse,
-                ContactMail = club.ContactMail,
-                Name = club.Name,
-                Phone = club.Phone
-            };
+                _context.Clubs.Add(newClub);
+                _context.SaveChanges();
+                club.ClubId = newClub.Id;
 
-            _context.Clubs.Add(newClub);
-            _context.SaveChanges();
-            club.ClubId = newClub.Id;
-
-            return Created("clubs",club );
+                return Created("clubs",club );
+            }
+            return BadRequest(errors);
         }
 
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
-        {
-        }
-
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+        
     }
 }

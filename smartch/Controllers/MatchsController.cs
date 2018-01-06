@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Business;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using model;
 using smartch.PostModel;
+using smartch.PostModel.Validator;
 
 namespace smartch.Controllers
 {
@@ -23,17 +25,29 @@ namespace smartch.Controllers
         }
 
         [HttpGet("arbitrage")]
-        public async Task<IEnumerable<MatchDTO>> Get()
+        public async Task<IActionResult> Get()
         {
             Account currentUser = await GetCurrentUserAsync();
-            return _context.Tournaments.SelectMany(t => t.Matches).Where(t => t.Arbitre == currentUser).Include(m=>m.Joueur1).Include(m => m.Joueur2).Include(m=>m.Score).Select(m=> new MatchDTO(m));
+            return Ok(_context.Tournaments
+                .SelectMany(t => t.Matches)
+                .Where(t => t.Arbitre == currentUser)
+                .Include(m=>m.Joueur1)
+                .Include(m => m.Joueur2)
+                .Include(m=>m.Score)
+                .Select(m=> new MatchDTO(m, new CalculPointPingPong())));
         }
+
         [HttpPost("{idMatch}/point")]
-        public async Task<Match> PostPoint(long idMatch, [FromBody] PointDTO pointDto)
+        public async Task<IActionResult> PostPoint(long idMatch, [FromBody] PointDTO pointDto)
         {
+            List<Error> errors = new List<Error>();
             Account currentUser = await GetCurrentUserAsync();
-            var matchs = _context.Tournaments.SelectMany(t => t.Matches).Where(t => t.Id == idMatch).Include(m => m.Score);
-            if (matchs.Count() > 0)
+            var matchs = _context.Tournaments
+                .SelectMany(t => t.Matches)
+                .Where(t => t.Id == idMatch && t.Arbitre == currentUser)
+                .Include(m => m.Score);
+            errors = PointDTOValidator.Validate(pointDto, errors);
+            if (matchs.Count() > 0 && errors.Count()<=0)
             {
                 Point point = pointDto.GetPoint();
                 Match match = matchs.Single();
@@ -51,19 +65,31 @@ namespace smartch.Controllers
                 point.Order = maxOrder + 1;
                 match.Score.Add(point);
                 _context.SaveChanges();
-                return match;
+                Score score = new CalculPointPingPong().Calcul(match.Score);
+                return Created("", score);
             }
-            else
+            else if(matchs.Count() <= 0)
             {
-                return null;
+                errors.Add(new Error()
+                {
+                    Code = "MatchUnknowOrUnAuhthorize",
+                    Description = "Le match n'as pas été trouver ou vous n'avez pas acces au match"
+                });
+                return BadRequest(errors);
             }
+            return BadRequest(errors);
           
         }
+
         [HttpDelete("{idMatch}/point/{joueur}")]
         public async Task<IActionResult> DeletePoint(long idMatch,EJoueurs joueur)
         {
+            List<Error> errors = new List<Error>();
             Account currentUser = await GetCurrentUserAsync();
-            var matchs = _context.Tournaments.SelectMany(t => t.Matches).Where(t => t.Id == idMatch).Include(m=>m.Score);
+            var matchs = _context.Tournaments
+                .SelectMany(t => t.Matches)
+                .Where(t => t.Id == idMatch && t.Arbitre == currentUser)
+                .Include(m=>m.Score);
             if (matchs.Count() > 0)
             {
                
@@ -74,11 +100,32 @@ namespace smartch.Controllers
                     Point lastPoint = match.Score.OrderByDescending(p => p.Order).Where(p=>p.Joueur == joueur).FirstOrDefault();
                     match.Score.Remove(lastPoint);
                     _context.SaveChanges();
-                    return Ok();
+                    Score score = new CalculPointPingPong().Calcul(match.Score);
+             
+                    return Ok(score);
+                }
+                else
+                {
+                    errors.Add(new Error()
+                    {
+                        Code = "NothingToDelete",
+                        Description = "impossible de supprimer un point"
+                    });
+                    return BadRequest(errors);
                 }
                 
             }
-            return BadRequest();
+            else
+            {
+                errors.Add(new Error()
+                {
+                    Code = "MatchUnknowOrUnAuhthorize",
+                    Description = "Le match n'as pas été trouver ou vous n'avez pas acces au match"
+                });
+                return BadRequest(errors);
+            }
+
+            
 
         }
     }

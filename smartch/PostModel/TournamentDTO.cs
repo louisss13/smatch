@@ -1,4 +1,5 @@
-﻿using model;
+﻿using Business;
+using model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,7 +53,7 @@ namespace smartch.PostModel
             List<MatchDTO> matchs = new List<MatchDTO>();
             foreach (Match match in matches)
             {
-                matchs.Add(new MatchDTO(match));
+                matchs.Add(new MatchDTO(match, new CalculPointPingPong()));
             }
             return  matchs;
         }
