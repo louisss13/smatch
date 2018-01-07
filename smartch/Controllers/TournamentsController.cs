@@ -264,7 +264,7 @@ namespace smartch.Controllers
 
         }   
 
-        [HttpPost("{idTournament}")]
+        [HttpPost("{idTournament}/matchs")]
         public async Task<IActionResult> AddMatch(int idTournament, long matchId, [FromBody]MatchDTO matchDto)
         {
             List<Error> errors = new List<Error>();
@@ -273,15 +273,37 @@ namespace smartch.Controllers
             Match match = matchDto.GetMacth();
             
             var tournamentQuery = _context.Tournaments
+                .Include(t=>t.Matches)
                 .Where(t => t.Id == idTournament && t.Admins.Where(a=>a.Account.Id == currentUser.Id).Count()>0);
             if (errors.Count() <= 0)
             {
                 if (tournamentQuery.Count() > 0)
                 {
-                    Tournament tounrament = tournamentQuery.First();
-                    tounrament.Matches.Add(match);
+                    if (matchDto.Arbitre != null)
+                    {
+                        var account = _context.UserInfo.Where(u => u.Id == matchDto.Arbitre.Id).Select(u => u.Owner);
+                        if (account != null)
+                            match.Arbitre = account.First();
+                    }
+                    if (match.Joueur1 != null)
+                    {
+                        UserInfo joueur1 = _context.UserInfo.Find(match.Joueur1.Id);
+                        match.Joueur1 = joueur1;
+                    }
+
+                    if (match.Joueur2 != null)
+                    {
+                        UserInfo joueur2 = _context.UserInfo.Find(match.Joueur2.Id);
+                        match.Joueur2 = joueur2;
+                    }
+
+                    Tournament tournament = tournamentQuery.First();
+                    if (tournament.Matches == null)
+                        tournament.Matches = new List<Match>();
+                    tournament.Matches.Add(match);
                     _context.SaveChanges();
-                    return Created("", match);
+                    matchDto.Id = match.Id;
+                    return Created("", matchDto);
                 }
                 else
                 {

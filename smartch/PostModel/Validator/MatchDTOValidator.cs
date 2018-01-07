@@ -34,7 +34,7 @@ namespace smartch.PostModel.Validator
                     Description = "Un emplacement est requi pour un match"
                 });
             }
-            if (match.Phase > 0)
+            if (match.Phase <= 0)
             {
                 errors.Add(new Error()
                 {
