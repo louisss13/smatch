@@ -43,15 +43,7 @@ namespace smartch.PostModel.Validator
                 }
                 );
             }
-            if (club.Name == null || club.Name.Length <= 0)
-            {
-                errors.Add(new Error()
-                {
-                    Code = "NameRequired",
-                    Description = "Le nom du club ne peux pas être vide"
-                }
-                );
-            }
+            
             if (club.Phone == null || club.Phone.Length <= 0)
             {
                 errors.Add(new Error()

@@ -17,14 +17,14 @@ namespace smartch.PostModel
         public UserDTO Joueur2 { get; set; }
         public long Joueur1Id { get; set; }
         public long Joueur2Id { get; set; }
-        public AccountDTO Arbitre { get; set; }
+        public UserDTO Arbitre { get; set; }
         public String Emplacement { get; set; }
         public Score CalculatedScore { get; set; }
 
         //public ICollection<Point> Score { get; set; }
 
         public MatchDTO() { }
-        public MatchDTO(Match match, ICalculPoint CalculScore)
+        public MatchDTO(Match match, UserInfo arbitre, ICalculPoint CalculScore)
         {
             Id = match.Id;
             Phase = match.Phase;
@@ -37,7 +37,7 @@ namespace smartch.PostModel
                 Joueur1Id = match.Joueur1.Id;
             if (match.Joueur2 != null)
                 Joueur2Id = match.Joueur2.Id;
-            Arbitre = new AccountDTO(match.Arbitre);
+            Arbitre = (arbitre!= null)?new UserDTO(arbitre):null;
 
             //Score = match.Score;
             CalculatedScore = CalculScore.Calcul(match.Score);
@@ -53,7 +53,7 @@ namespace smartch.PostModel
 
                 Joueur1 = (this.Joueur1 != null) ? this.Joueur1.getUser() : null,
                 Joueur2 = (this.Joueur2 != null) ? this.Joueur2.getUser() : null,
-                Arbitre = (this.Arbitre != null) ? this.Arbitre.GetAccount() : null,
+                //Arbitre = (this.Arbitre != null) ? this.Arbitre.GetAccount() : null,
                 Emplacement = Emplacement,
 
                 //Score = this.Score

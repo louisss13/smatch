@@ -28,13 +28,21 @@ namespace smartch.Controllers
         public async Task<IActionResult> Get()
         {
             Account currentUser = await GetCurrentUserAsync();
-            return Ok(_context.Tournaments
+            var rawMatch = _context.Tournaments
                 .SelectMany(t => t.Matches)
                 .Where(t => t.Arbitre == currentUser)
-                .Include(m=>m.Joueur1)
+                .Include(m => m.Joueur1)
                 .Include(m => m.Joueur2)
-                .Include(m=>m.Score)
-                .Select(m=> new MatchDTO(m, new CalculPointPingPong())));
+                .Include(m => m.Score);
+           
+                //.Select(m => new MatchDTO(m, new CalculPointPingPong()))
+            return Ok(rawMatch.Select(m => new MatchDTO(m, null, new CalculPointPingPong())));
+        }
+        public async Task<UserInfo> AccountToUserInfo(Account account)
+        {
+            Account currentUser = await GetCurrentUserAsync();
+            var user = _context.UserInfo.Include(u => u.Adresse).Where(u => u.CreatedBy == currentUser && u.Owner == account);
+            return user.First();
         }
 
         [HttpPost("{idMatch}/point")]

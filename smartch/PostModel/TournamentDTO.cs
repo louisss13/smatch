@@ -53,7 +53,7 @@ namespace smartch.PostModel
             List<MatchDTO> matchs = new List<MatchDTO>();
             foreach (Match match in matches)
             {
-                matchs.Add(new MatchDTO(match, new CalculPointPingPong()));
+                matchs.Add(new MatchDTO(match, null, new CalculPointPingPong()));
             }
             return  matchs;
         }

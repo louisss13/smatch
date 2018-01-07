@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Business;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -31,8 +32,8 @@ namespace smartch.Controllers
             Account currentUser = await GetCurrentUserAsync();
             IEnumerable<Tournament> tournaments = _context.Tournaments
                 .Include(c => c.Club)
-                .Include(t=>t.Address)
-                .Include(t=>t.Participants)
+                .Include(t => t.Address)
+                .Include(t => t.Participants).ThenInclude(p => p.User)
                 .Where(c => c.Admins.Where(a => a.Account == currentUser).Count() > 0);
             List<TournamentListDTO> tournamentDTO = new List<TournamentListDTO>();
             foreach (Tournament t in tournaments)
@@ -58,7 +59,17 @@ namespace smartch.Controllers
                 .Include(t => t.Matches).ThenInclude(m => m.Score);
             if (tournaments.Count() > 0) { 
                 Tournament tournament = tournaments.Single<Tournament>();
-                return Ok(new TournamentDTO(tournament));
+                TournamentDTO tournamentDTO = new TournamentDTO(tournament);
+                if (tournamentDTO.Matches.Count() > 0) {
+                    List<MatchDTO> matches = new List<MatchDTO>();
+                    foreach(Match match in tournament.Matches)
+                    {
+                        UserInfo user = await this.AccountToUserInfo(match.Arbitre);
+                        matches.Add( new MatchDTO(match, user, new CalculPointPingPong()));
+                    }
+                    tournamentDTO.Matches = matches;
+                }
+                return Ok(tournamentDTO);
             }
             else
             {
@@ -145,7 +156,7 @@ namespace smartch.Controllers
                 }
             }
             errors = TournamentListDTOValidator.Validate(tournament, errors);
-            if (errors.Count() > 0)
+            if (errors.Count() <= 0)
             {
                 Tournament newTournament = new Tournament()
                 {
@@ -294,17 +305,32 @@ namespace smartch.Controllers
             Account currentUser = await GetCurrentUserAsync();
             var tournamentQuery = _context.Tournaments
                 .Where(t => t.Id == idTournament)
+                .Include(t => t.Admins).ThenInclude(a => a.Account)
                 .Include(t => t.Matches).ThenInclude(m => m.Joueur1)
                 .Include(t => t.Matches).ThenInclude(m => m.Joueur2)
                 .Include(t => t.Matches).ThenInclude(m => m.Arbitre).First();
-            var matchQuery = tournamentQuery.Matches.Where(m => m.Id == matchId && m.Arbitre.Id == currentUser.Id);
-            if (matchQuery.Count() <= 0)
+            IEnumerable<Match> matchQuery;
+            if (tournamentQuery.Admins.Where(a => a.Account.Id == currentUser.Id).Count() > 0)
+            {
+                matchQuery = tournamentQuery.Matches.Where(m => m.Id == matchId);
+            }
+            else
+            {
+                matchQuery = tournamentQuery.Matches.Where(m => m.Id == matchId && m.Arbitre.Id == currentUser.Id);
+            }
+            
+            if (matchQuery.Count() > 0)
             {
                 Match matchInDb = matchQuery.First();
 
                 Match match = matchDTO.GetMacth();
-                //if (matchDTO.Arbitre != null)
-                //    match.Arbitre = matchDTO.Arbitre;
+                if (matchDTO.Arbitre != null)
+                {
+                    var account = _context.UserInfo.Where(u => u.Id == matchDTO.Arbitre.Id).Select(u => u.Owner);
+                    if(account != null)
+                        matchInDb.Arbitre = account.First();
+                }
+                    
                 if (match.Joueur1 != null && match.Joueur1.Id != matchInDb.Joueur1.Id)
                 {
                     UserInfo joueur1 = _context.UserInfo.Find(match.Joueur1.Id);
@@ -325,7 +351,7 @@ namespace smartch.Controllers
                     matchInDb.Emplacement = match.Emplacement;
 
                 _context.SaveChanges();
-                return Ok(matchInDb);
+                return Ok(new MatchDTO(matchInDb, null, new CalculPointPingPong()));
             }
             else
             {
@@ -338,6 +364,11 @@ namespace smartch.Controllers
             return BadRequest(errors);
         }
 
-       
+        public async Task<UserInfo> AccountToUserInfo(Account account)
+        {
+            Account currentUser = await GetCurrentUserAsync();
+            var user = _context.UserInfo.Include(u => u.Adresse).Where(u => u.CreatedBy == currentUser && u.Owner == account);
+            return user.First();
+        }
     }
 }

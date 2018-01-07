@@ -91,7 +91,7 @@ namespace smartch.Controllers
 
                 _context.Clubs.Add(newClub);
                 _context.SaveChanges();
-                club.ClubId = newClub.Id;
+                club.Id = newClub.Id;
 
                 return Created("clubs",club );
             }

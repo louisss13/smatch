@@ -45,6 +45,13 @@ namespace smartch.Controllers
             return returnUsers;
         }
 
+        public async Task<UserInfo> AccountToUserInfo(Account account)
+        {
+            Account currentUser = await GetCurrentUserAsync();
+            var user = _context.UserInfo.Include(u => u.Adresse).Where(u => u.CreatedBy == currentUser && u.Owner == account);
+            return user.First();
+        }
+
         // GET api/values/5
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(long id)

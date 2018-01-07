@@ -8,7 +8,7 @@ namespace smartch.PostModel
 {
     public class ClubDTO
     {
-        public long ClubId { get; set; }
+        public long Id { get; set; }
         public String Name { get; set; }
         public Address Adresse { get; set; }
         public String ContactMail { get; set; }
@@ -20,7 +20,7 @@ namespace smartch.PostModel
         public ClubDTO(Club club)
         {
             Name = club.Name;
-            ClubId = club.Id;
+            Id = club.Id;
             Adresse = club.Adresse;
             ContactMail = club.ContactMail;
             Phone = club.Phone;
