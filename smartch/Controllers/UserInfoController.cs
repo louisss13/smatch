@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using smartch.PostModel.Validator;
 
 namespace smartch.Controllers
 {
@@ -46,48 +47,58 @@ namespace smartch.Controllers
 
         // GET api/values/5
         [HttpGet("{id}")]
-        public UserInfo Get(long id)
+        public async Task<IActionResult> Get(long id)
         {
+            List<Error> errors = new List<Error>();
+            Account currentUser = await GetCurrentUserAsync();
             UserInfo user = _context.UserInfo.Find(id);
-            return user;
+            if(user == null || (user.CreatedBy.Id != currentUser.Id && user.Owner.Id != currentUser.Id))
+            {
+                errors.Add(new Error()
+                {
+                    Code = "UserNotFoundOrUnAuthorize", 
+                    Description = "l'utilisateur n'existe pas ou vous n'avez pas la permission d'y accéder"
+
+                });
+            }
+            else
+            {
+                return Ok(user);
+            }
+                
+            return BadRequest(errors);
         }
 
         
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]UserInfo user)
         {
+            List<Error> errors = new List<Error>();
             if (user == null) { return BadRequest(); }
 
             Account currentUser = await GetCurrentUserAsync();
-            user.CreatedBy = currentUser;
-            _context.UserInfo.Add(user);
-            _context.SaveChanges();
-            var linkAccountRaw = _context.Account.Where(a => a.Email == user.Email);
-            if(linkAccountRaw.Count() > 0)
+            errors = UserInfoValidator.Validate(user, errors);
+            if (errors.Count() <= 0)
             {
-                Account linkAccount = linkAccountRaw.Single();
-                if (linkAccount.Infos == null)
-                {
-                    linkAccount.Infos = new List<UserInfo>();
-                }
-                linkAccount.Infos.Add(user);
+                user.CreatedBy = currentUser;
+                _context.UserInfo.Add(user);
                 _context.SaveChanges();
+                var linkAccountRaw = _context.Account.Where(a => a.Email == user.Email);
+                if (linkAccountRaw.Count() > 0)
+                {
+                    Account linkAccount = linkAccountRaw.Single();
+                    if (linkAccount.Infos == null)
+                    {
+                        linkAccount.Infos = new List<UserInfo>();
+                    }
+                    linkAccount.Infos.Add(user);
+                    _context.SaveChanges();
+                }
+                return Created("users/" + user.Id, user);
             }
-           
-
-            return Created("users/"+user.Id, user);
+            return BadRequest(errors);
         }
 
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
-        {
-        }
-
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+        
     }
 }

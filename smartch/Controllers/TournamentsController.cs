@@ -176,101 +176,168 @@ namespace smartch.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutAsync(int id, [FromBody]TournamentDTO value)
         {
+            List<Error> errors = new List<Error>();
             Account currentUser = await GetCurrentUserAsync();
-            Tournament tournament = _context.Tournaments
-                .Where(t => t.Id == id && t.Admins.Where(a => a.Account == currentUser).Count() > 0).First();
-            List<Match> matchs = new List<Match>();
-            foreach(MatchDTO match in value.Matches)
+            var rawTournament = _context.Tournaments
+                .Where(t => t.Id == id && t.Admins.Where(a => a.Account == currentUser).Count() > 0);
+            if (rawTournament.Count() > 0)
             {
-                Match newMatch = match.GetMacth();
-                UserInfo user1 = _context.UserInfo.Where(u => u.Id == match.Joueur1Id).First();
-                UserInfo user2 = _context.UserInfo.Where(u => u.Id == match.Joueur2Id).First();
-                
+                Tournament tournament = rawTournament.First();
+                List<Match> matchs = new List<Match>();
+                // enregistement des matchs par default
+                foreach (MatchDTO match in value.Matches)
+                {
+                    Match newMatch = match.GetMacth();
+                    var rawUser1 = _context.UserInfo.Where(u => u.Id == match.Joueur1Id && u.CreatedBy.Id == currentUser.Id);
+                    var rawUser2 = _context.UserInfo.Where(u => u.Id == match.Joueur2Id && u.CreatedBy.Id == currentUser.Id);
+                    if(rawUser1.Count()<=0 || rawUser2.Count() <= 0)
+                    {
+                        errors.Add(new Error()
+                        {
+                            Code = "JoueurUnknowOrUnAuthorize",
+                            Description = "Un Joueur n'existe pas ou vous n'avez pas l'authorisation d'y accéder"
+                        });
+                    }
+                    else
+                    {
+                        UserInfo user1 = rawUser1.First();
+                        UserInfo user2 = _context.UserInfo.Where(u => u.Id == match.Joueur2Id && u.CreatedBy.Id == currentUser.Id).First();
 
-                newMatch.Joueur1 = user1;
-                newMatch.Joueur2 = user2;
-                newMatch.Arbitre = currentUser;
-                newMatch.Emplacement = "terrain 1";
-                matchs.Add(newMatch);
+
+                        newMatch.Joueur1 = user1;
+                        newMatch.Joueur2 = user2;
+                        newMatch.Arbitre = currentUser;
+                        newMatch.Emplacement = "terrain 1";
+                        matchs.Add(newMatch);
+                    }
+                    
+                }
+                errors = TournamentDTOValidator.Validate(value, errors);
+               
+                if (tournament != null)
+                {
+                    if (errors.Count() <= 0)
+                    {
+
+                        //tournament.Club = value.Club,
+                        //tournament.Admins = value.Admins ;
+                        tournament.Address = value.Address;
+                        tournament.BeginDate = value.BeginDate;
+                        tournament.EndDate = value.EndDate;
+                        tournament.Etat = value.Etat;
+                        tournament.Name = value.Name;
+                        tournament.Matches = matchs;
+                        //tournament.Participants = value.Participants;
+                        _context.SaveChanges();
+                        return Ok(new TournamentDTO(tournament));
+                    }
+                }
+                else
+                {
+                    errors.Add(new Error()
+                    {
+                        Code = "TournamentUnknowOrUnAuthorize",
+                        Description = "Un tournois n'existe pas ou vous n'avez pas l'authorisation d'y accéder"
+                    });
+                }
             }
-
-            if (tournament != null)
+            else
             {
-
-                //tournament.Club = value.Club,
-                //tournament.Admins = value.Admins ;
-                tournament.Address = value.Address;
-                tournament.BeginDate = value.BeginDate;
-                tournament.EndDate = value.EndDate;
-                tournament.Etat = value.Etat;
-                tournament.Name = value.Name;
-                tournament.Matches = matchs;
-                //tournament.Participants = value.Participants;
-                _context.SaveChanges();
-                return Ok();
+                errors.Add(new Error()
+                {
+                    Code = "TournamentUnknowOrUnAuthorize",
+                    Description = "Un tournois n'existe pas ou vous n'avez pas l'authorisation d'y accéder"
+                });
             }
-            return Unauthorized();
+            return BadRequest(errors);
 
-        }
-
-       
+        }   
 
         [HttpPost("{idTournament}")]
-        public IActionResult AddMatch(int idTournament, long matchId, [FromBody]MatchDTO matchDto)
+        public async Task<IActionResult> AddMatch(int idTournament, long matchId, [FromBody]MatchDTO matchDto)
         {
-            
+            List<Error> errors = new List<Error>();
+            Account currentUser = await GetCurrentUserAsync();
+            errors = MatchDTOValidator.Validate(matchDto, errors);
             Match match = matchDto.GetMacth();
-            if (match.Emplacement == null)
-                match.Emplacement = "Terrain 1";
-            var tournamentQuery = _context.Tournaments.Where(t => t.Id == idTournament).First();
-            Tournament tounrament = tournamentQuery as Tournament;
-            tounrament.Matches.Add(match);
-            _context.SaveChanges();
+            
+            var tournamentQuery = _context.Tournaments
+                .Where(t => t.Id == idTournament && t.Admins.Where(a=>a.Account.Id == currentUser.Id).Count()>0);
+            if (errors.Count() <= 0)
+            {
+                if (tournamentQuery.Count() > 0)
+                {
+                    Tournament tounrament = tournamentQuery.First();
+                    tounrament.Matches.Add(match);
+                    _context.SaveChanges();
+                    return Created("", match);
+                }
+                else
+                {
+                    errors.Add(new Error()
+                    {
+                        Code = "TournamentUnknowOrUnAuthorize",
+                        Description = "Un tournois n'existe pas ou vous n'avez pas l'authorisation d'y accéder"
+                    });
+                }
+            }
+            return BadRequest(errors);
 
-            return Created("", match);
+
+            
         }
 
         [HttpPut("{idTournament}/matchs/{matchId}")]
-        public IActionResult UpdateMatch(int idTournament, long matchId, [FromBody]MatchDTO matchDTO)
+        public async Task<IActionResult> UpdateMatch(int idTournament, long matchId, [FromBody]MatchDTO matchDTO)
         {
+            List<Error> errors = new List<Error>();
+            Account currentUser = await GetCurrentUserAsync();
             var tournamentQuery = _context.Tournaments
                 .Where(t => t.Id == idTournament)
                 .Include(t => t.Matches).ThenInclude(m => m.Joueur1)
                 .Include(t => t.Matches).ThenInclude(m => m.Joueur2)
                 .Include(t => t.Matches).ThenInclude(m => m.Arbitre).First();
-            var matchQuery = tournamentQuery.Matches.Where(m => m.Id == matchId).First();
+            var matchQuery = tournamentQuery.Matches.Where(m => m.Id == matchId && m.Arbitre.Id == currentUser.Id);
+            if (matchQuery.Count() <= 0)
+            {
+                Match matchInDb = matchQuery.First();
 
-            Match matchInDb = matchQuery as Match;
-            
-            Match match = matchDTO.GetMacth();
-            //if (matchDTO.Arbitre != null)
-            //    match.Arbitre = matchDTO.Arbitre;
-            if (match.Joueur1 != null && match.Joueur1.Id != matchInDb.Joueur1.Id)
-            {
-                UserInfo joueur1 = _context.UserInfo.Find(match.Joueur1.Id);
-                matchInDb.Joueur1 = joueur1;
+                Match match = matchDTO.GetMacth();
+                //if (matchDTO.Arbitre != null)
+                //    match.Arbitre = matchDTO.Arbitre;
+                if (match.Joueur1 != null && match.Joueur1.Id != matchInDb.Joueur1.Id)
+                {
+                    UserInfo joueur1 = _context.UserInfo.Find(match.Joueur1.Id);
+                    matchInDb.Joueur1 = joueur1;
+                }
+
+                if (match.Joueur2 != null && match.Joueur2.Id != matchInDb.Joueur2.Id)
+                {
+                    UserInfo joueur2 = _context.UserInfo.Find(match.Joueur2.Id);
+                    matchInDb.Joueur2 = joueur2;
+                }
+
+                if (match.Phase > 0)
+                    matchInDb.Phase = match.Phase;
+                if (match.DebutPrevu != null)
+                    matchInDb.DebutPrevu = match.DebutPrevu;
+                if (match.Emplacement != null)
+                    matchInDb.Emplacement = match.Emplacement;
+
+                _context.SaveChanges();
+                return Ok(matchInDb);
             }
-                
-            if (match.Joueur2 != null && match.Joueur2.Id != matchInDb.Joueur2.Id)
+            else
             {
-                UserInfo joueur2 = _context.UserInfo.Find(match.Joueur2.Id);
-                matchInDb.Joueur2 = joueur2;
+                errors.Add(new Error()
+                {
+                    Code = "MatchUnknowOrUnAuthorize",
+                    Description = "le match n'existe pas ou vous n'avez pas l'authorisation d'y accéder"
+                });
             }
-               
-            if (match.Phase > 0)
-                matchInDb.Phase = match.Phase;
-            if (match.DebutPrevu != null)
-                matchInDb.DebutPrevu = match.DebutPrevu;
-            
-                matchInDb.DebutPrevu = match.DebutPrevu;
-            _context.SaveChanges();
-            return Ok(matchInDb);
+            return BadRequest(errors);
         }
 
-        // DELETE api/<controller>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+       
     }
 }

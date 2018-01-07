@@ -15,6 +15,7 @@ namespace model
         public String Name { get; set; }
         [Required]
         public String FirstName { get; set; }
+        [Required]
         [EmailAddress]
         public String Email { get; set; }
         [Phone]
