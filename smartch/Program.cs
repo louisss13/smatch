@@ -17,7 +17,7 @@ namespace smartch
             BuildWebHost(args).Run();
         }
 
-        //Coucouc
+      
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
