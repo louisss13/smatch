@@ -19,6 +19,10 @@ namespace smartch.PostModel
         public ClubDTO() { }
         public ClubDTO(Club club)
         {
+            if(club == null)
+            {
+                return;
+            }
             Name = club.Name;
             Id = club.Id;
             Adresse = club.Adresse;

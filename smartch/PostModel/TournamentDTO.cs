@@ -50,7 +50,10 @@ namespace smartch.PostModel
 
         private ICollection<MatchDTO> ToMatchesDTO(ICollection<Match> matches)
         {
+
             List<MatchDTO> matchs = new List<MatchDTO>();
+            if (matches == null)
+                return matchs;
             foreach (Match match in matches)
             {
                 matchs.Add(new MatchDTO(match, null, new CalculPointPingPong()));
@@ -59,6 +62,8 @@ namespace smartch.PostModel
         }
         private ICollection<UserDTO> ToUserDTO(ICollection<TournamentJoueur> participants)
         {
+            if (participants == null)
+                return null;
             List<UserDTO> users = new List<UserDTO>();
             foreach (TournamentJoueur joueur in participants)
             {

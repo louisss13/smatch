@@ -21,6 +21,8 @@ namespace smartch.Controllers
         private UserManager<Account> _userManager;
         public AccountController(UserManager<Account> userManager, SmartchDbContext dbContext): base(userManager,  dbContext)
         {
+
+
             this._userManager = userManager;
         }
 

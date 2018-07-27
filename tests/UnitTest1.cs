@@ -13,7 +13,7 @@ namespace tests
         [TestInitialize]
         public void InitTestUser(SmartchDbContext dbContext)
         {
-            
+           
             _context = dbContext;
 
            // _context.Database.EnsureDeleted();

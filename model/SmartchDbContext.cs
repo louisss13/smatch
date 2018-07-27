@@ -20,7 +20,7 @@ namespace model
 
         public SmartchDbContext(DbContextOptions options) : base(options) {
             //this.Database.EnsureDeleted();
-            //this.Database.EnsureCreated();
+            this.Database.EnsureCreated();
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -43,7 +43,14 @@ namespace model
             .HasIndex(p => new { p.MatchId, p.Order }).IsUnique();
 
             modelBuilder.Entity<ClubAdmins>().HasKey(x => new { x.ClubId, x.AccountId });
-            
+            modelBuilder.Entity<ClubMember>()
+                    .HasOne(cm => cm.UserInfo)
+                    .WithMany()
+                    .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<TournamentJoueur>()
+                    .HasOne(tj => tj.User)
+                    .WithMany()
+                    .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<ClubMember>().HasKey(x => new { x.ClubId, x.UserInfoId });
             modelBuilder.Entity<TournamentAdmin>().HasKey(x => new { x.TournamentId, x.AccountId });
             modelBuilder.Entity<TournamentJoueur>().HasKey(x => new { x.TournamentId, x.UserInfoId });

@@ -167,7 +167,8 @@ namespace smartch.Controllers
                     EndDate = tournament.EndDate,
                     Etat = tournament.Etat,
                     Name = tournament.Name,
-                    Participants = participants
+                    Participants = participants,
+             
                 };
 
                 _context.Tournaments.Add(newTournament);
@@ -190,6 +191,9 @@ namespace smartch.Controllers
             List<Error> errors = new List<Error>();
             Account currentUser = await GetCurrentUserAsync();
             var rawTournament = _context.Tournaments
+                .Include(c => c.Club)
+                .Include(t => t.Address)
+                .Include(t => t.Participants).ThenInclude(p => p.User)
                 .Where(t => t.Id == id && t.Admins.Where(a => a.Account == currentUser).Count() > 0);
             if (rawTournament.Count() > 0)
             {
@@ -219,7 +223,8 @@ namespace smartch.Controllers
                         newMatch.Joueur2 = user2;
                         newMatch.Arbitre = currentUser;
                         newMatch.Emplacement = "terrain 1";
-                        matchs.Add(newMatch);
+                        if(match.Id <= 0)
+                            matchs.Add(newMatch);
                     }
                     
                 }
@@ -229,15 +234,17 @@ namespace smartch.Controllers
                 {
                     if (errors.Count() <= 0)
                     {
-
-                        //tournament.Club = value.Club,
+                        if(tournament.Club != null && value.Club != null && tournament.Club.Id != value.Club.Id)
+                        {
+                            tournament.Club = GetClubById(value.Club.Id, currentUser);
+                        }
                         //tournament.Admins = value.Admins ;
                         tournament.Address = value.Address;
                         tournament.BeginDate = value.BeginDate;
                         tournament.EndDate = value.EndDate;
                         tournament.Etat = value.Etat;
                         tournament.Name = value.Name;
-                        tournament.Matches = matchs;
+                        tournament.Matches = matchs; 
                         //tournament.Participants = value.Participants;
                         _context.SaveChanges();
                         return Ok(new TournamentDTO(tournament));
@@ -350,7 +357,7 @@ namespace smartch.Controllers
                 {
                     var account = _context.UserInfo.Where(u => u.Id == matchDTO.Arbitre.Id).Select(u => u.Owner);
                     if(account != null)
-                        matchInDb.Arbitre = account.First();
+                        matchInDb.Arbitre = account.DefaultIfEmpty(null).First();
                 }
                     
                 if (match.Joueur1 != null && match.Joueur1.Id != matchInDb.Joueur1.Id)
@@ -386,11 +393,30 @@ namespace smartch.Controllers
             return BadRequest(errors);
         }
 
+        [HttpDelete("{idTournament}/matchs/{matchId}")]
+        public  IActionResult DeleteMatch(long idTournament, long matchId)
+        {
+            Tournament tournamentQuery = null;
+            tournamentQuery = _context.Tournaments
+                .Where(t => t.Id == idTournament)
+                .Include(t => t.Matches).First();
+            var matchQuery = tournamentQuery.Matches.Where(m => m.Id == matchId).First();
+            tournamentQuery.Matches.Remove(matchQuery);
+            _context.SaveChanges();
+            return Ok();
+        }
+
         public async Task<UserInfo> AccountToUserInfo(Account account)
         {
             Account currentUser = await GetCurrentUserAsync();
             var user = _context.UserInfo.Include(u => u.Adresse).Where(u => u.CreatedBy == currentUser && u.Owner == account);
-            return user.First();
+            
+            return user.DefaultIfEmpty(null).First();
+        }
+        private Club GetClubById(long clubId, Account currentUser)
+        {
+            return _context.Clubs
+                   .Where(c => c.Id == clubId && c.Admins.Where(a => a.Account.Id == currentUser.Id).Count() > 0).First();
         }
     }
 }
